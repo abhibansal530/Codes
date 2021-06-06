@@ -1,0 +1,53 @@
+#+TITLE: Meeting Rooms II
+
+* Problem
+Given a list of meeting intervals : `[(s1, e1),(s2,e2)...]`, return minimum number of conference
+rooms required to hold them.
+
+* Idea
+If we visualize all given meeting intervals on a line which represents time, then at any point of
+time we'll have some ongoing meetings (possibly 0). So at any point of time we'll need atleast those
+many rooms. Now there'll be a time when we'll have maximum no. of meetings, so if we have enough rooms
+to hold them, then we are done. So essentially problem boils down to this :
+
+#+BEGIN_QUOTE
+Given a list of intervals, find maximum number of intervals that overlap at any point.
+#+END_QUOTE
+
+* Solution
+Various solutions to solve this problem :
+** Maintain overlapping intervals
+Here idea is that we'll process intervals in sorted order (by start time), and while processing an i'th
+interval, we keep track of the intervals that are overlapping with it so far. So our final answer will
+be max value of overlapping intervals. Pseudo code :
+
+#+BEGIN_SRC cpp
+int numMaxOverlappingIntervals(vector<Interval>& intervals) {
+    int ans = 0;
+
+    // Sort intervals by start time.
+    sort(intervals, interval.start);
+
+    // Set to maintain overlapping intervals.
+    IntervalSet iset;
+
+    for (const auto& interval : intervals) {
+        iset.DiscardNonOverlapping(interval);
+        iset.Insert(interval);
+        ans = max(ans, iset.Size());
+    }
+
+    return ans;
+}
+#+END_SRC
+
+So our only requirement here is an efficient implementation of above 'IntervalSet'. Let's see how will our
+'DiscardNonOverlapping' method will work.
+
+Given an interval 'intv', we want to efficiently remove all the intervals in the set which do not overlap with it.
+To do that we just need to discard those intervals whose end time is less that 'intv.start'. So essentially we just
+need an ordering on end time of intervals in our set. We can simply maintain them in sorted order, but that's an
+overkill here, so we can just maintain a min heap instead.
+
+So replacing 'IntervalSet' above with a min heap of interval's end time will work.
+** TODO Keep count of open intervals
