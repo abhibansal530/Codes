@@ -1,0 +1,65 @@
+#+TITLE: Jump Game VI
+
+* Problem
+You are given an integer array =nums=  and an integer =k=.
+
+You are initially standing at index =0=. In one move, you can jump at most =k= steps forward without going
+outside the boundaries of the array. That is, you can jump from index =i= to any index in the range
+=[i + 1, min(n - 1, i + k)]= inclusive.
+
+You want to reach the last index of the array (index =n - 1=). Your score is the sum of all =nums[j]= for each
+index =j=j you visited in the array.
+
+Return the *maximum score* you can get.
+* Solution
+Clearly this can be solved using DP :
+
+If DP[i] = Max score which we can get starting from index i, then we have :-
+
+DP[i] = nums[i] + max(DP[j]), i + 1 <= j <= min(n - 1, i + k)
+
+But this has a time complexity of =O(n * kj)=
+
+Can we do better ?
+
+Yes, we can. Let's assume that we have already computed DP[j], for each j > i and want to now compute DP[i].
+What we need is to find the maxium element in DP[i + 1 .. min(n - 1, i + k)]. Then shift our window of size k
+to the left and repeat the same procedure for other indices.
+
+So now this is reduced to standard problem of finding *Sliding Window Maximum*.
+
+#+BEGIN_SRC cpp
+// Queue which maintains current maximum element also.
+// Refer *Sliding Window Maximum* problem for its implementation.
+class MaxQueue {
+  public:
+
+  void Push(int x);
+
+  void Pop();
+
+  int GetMax();
+
+  int Size() const;
+};
+
+int maxResult(vector<int>& nums, int k) {
+  MaxQueue max_q;
+  int n = nums.size();
+  vector<int> DP(n, INT_MIN);
+
+  // Base case;
+  DP[n - 1] = nums[n - 1];
+  max_q.Push(DP[n - 1]);
+
+  for (int i = n - 2; i >= 0; --i) {
+      DP[i] = nums[i] + max_q.GetMax();
+      max_q.Push(DP[i]);
+      if (max_q.Size() > k) {
+          max_q.Pop();
+      }
+  }
+
+  return DP[0];
+}
+#+END_SRC
