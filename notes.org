@@ -1,0 +1,14 @@
+#+TITLE: Notes
+
+* C++
+** STL
+*** Priority Queue
+In C++ priority queue (heap) orders elements in such a way so that its first
+element is always the greatest of the elements it contains (according to some
+ordering).
+
+So by default it acts as a "Max heap". To convert it into a "Min heap", we need
+an ordering according to which min element is the "greatest". So we use C++'s
+=greater<T>= comparator which orders (x, y) s.t. x > y. So by this ordering
+min element will be "greatest" (because it'll be last element in our ordering).
+Hence it'll be the first element in our queue, thus giving us a min heap.
