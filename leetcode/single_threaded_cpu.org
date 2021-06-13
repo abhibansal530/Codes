@@ -1,0 +1,136 @@
+#+TITLE: Single-Threaded CPU
+
+* Problem
+You are given =n=​​​​​​ tasks labeled from =0= to =n - 1= represented by a 2D integer array =tasks=, where
+=tasks[i] = [enqueueTimei, processingTimei]= means that the =i​​​​​​th=​​​​ task will be available to process at
+=enqueueTimei= and will take =processingTimei= to finish processing.
+
+You have a single-threaded CPU that can process *at most one* task at a time and will act in the following way:
+
+- If the CPU is idle and there are no available tasks to process, the CPU remains idle.
+- If the CPU is idle and there are available tasks, the CPU will choose the one with the *shortest processing time*.
+  If multiple tasks have the same shortest processing time, it will choose the task with the smallest index.
+- Once a task is started, the CPU will *process the entire task* without stopping.
+- The CPU can finish a task then start a new one instantly.
+
+Return the order in which the CPU will process the tasks.
+* Example
+*Input:* tasks = [[1,2],[2,4],[3,2],[4,1]]
+*Output:* [0,2,3,1]
+*Explanation:* The events go as follows:
+- At time = 1, task 0 is available to process. Available tasks = {0}.
+- Also at time = 1, the idle CPU starts processing task 0. Available tasks = {}.
+- At time = 2, task 1 is available to process. Available tasks = {1}.
+- At time = 3, task 2 is available to process. Available tasks = {1, 2}.
+- Also at time = 3, the CPU finishes task 0 and starts processing task 2 as it is the shortest. Available tasks = {1}.
+- At time = 4, task 3 is available to process. Available tasks = {1, 3}.
+- At time = 5, the CPU finishes task 2 and starts processing task 3 as it is the shortest. Available tasks = {1}.
+- At time = 6, the CPU finishes task 3 and starts processing task 1. Available tasks = {}.
+- At time = 10, the CPU finishes task 1 and becomes idle.
+
+* Solution
+Maintain two min heaps : One for events and other for backlogged tasks and then simulate the CPU.
+#+BEGIN_SRC cpp
+class Solution {
+    struct Task {
+      int idx_;
+      int duration_;
+
+      Task(int idx, int duration) : idx_(idx), duration_(duration) {}
+
+      bool operator>(const Task& rhs) const {
+        if (rhs.duration_ != duration_) {
+          return duration_ > rhs.duration_;
+        }
+        return idx_ > rhs.idx_;
+      }
+    };
+
+    struct Event {
+      // Index of event.
+      int idx_ = -1;
+
+      // Time of event.
+      long long int time_;
+
+      // Duration of event.
+      int duration_;
+
+      // Whether this is a finish event.
+      bool is_finish_ = false;
+
+      Event(int idx, long long int time, int dur, bool finish) : idx_(idx),
+        time_(time), duration_(dur), is_finish_(finish) {}
+
+      bool operator>(const Event& rhs) const {
+        if (time_ != rhs.time_) {
+          return time_ > rhs.time_;
+        }
+
+        if (is_finish_) return true;
+        if (rhs.is_finish_) return false;
+        return duration_ > rhs.duration_;
+      }
+    };
+
+
+    bool is_cpu_idle_ = true;
+    priority_queue<Task,vector<Task>,greater<Task>> backlog_;
+    priority_queue<Event,vector<Event>,greater<Event>> event_q_;
+    vector<int> ordering_;
+
+    void ScheduleTask(long long int cur_time, Task task) {
+      // Enqueue finish event and mark CPU as busy.
+      Event finish_event(-1, cur_time + 1LL * task.duration_, 0, true);
+      event_q_.push(finish_event);
+      is_cpu_idle_ = false;
+      ordering_.push_back(task.idx_);
+    }
+
+    void MaybeScheduleNextTask(long long int cur_time) {
+      if (backlog_.empty()) {
+        is_cpu_idle_ = true;
+        return;
+      }
+
+      auto nxt = backlog_.top();
+      backlog_.pop();
+      ScheduleTask(cur_time, move(nxt));
+    }
+
+    void BacklogTask(Task task) {
+      backlog_.push(move(task));
+    }
+
+public:
+    vector<int> getOrder(vector<vector<int>>& tasks) {
+        int n = tasks.size();
+        for (int i = 0;i < n; ++i) {
+            Event event(i, tasks[i][0], tasks[i][1], false);
+            event_q_.push(move(event));
+        }
+
+        while (!event_q_.empty()) {
+          auto event = event_q_.top();
+          event_q_.pop();
+
+          if (event.is_finish_) {
+            MaybeScheduleNextTask(event.time_);
+            continue;
+          }
+
+          Task task(event.idx_, event.duration_);
+          if (is_cpu_idle_) {
+            ScheduleTask(event.time_, move(task));
+            continue;
+          }
+
+          BacklogTask(move(task));
+        }
+
+        return ordering_;
+    }
+};
+#+END_SRC
+* Follow up
+What if we have two CPUs ?
