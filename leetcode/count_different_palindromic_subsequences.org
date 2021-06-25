@@ -1,0 +1,89 @@
+#+TITLE: Count Different Palindromic Subsequences
+
+* Problem
+Given a string =s=, return the number of different non-empty palindromic subsequences in =s=.
+Since the answer may be very large, return it *modulo* 10^9 + 7.
+
+* Idea
+If we neglect subsequences of length 1 for the moment then any palindromic subsequence will be of type
+
+x S x
+
+where a <= x <= z and S is further a palindromic subsequence (possibly empty).
+
+But to count only unique such subsequences we need to consider only one such pair of x s.t. they are farthest.
+So for each unique x, we find it's first and last location and then recursively try to find unique subsequences
+between those positions.
+
+So we have got a DP problem now.
+DP(i, j) = Count of unique palindromic subsequences in s[i..j]
+
+To find DP(i, j), we use below recurrence (excluding base and edge cases) :
+
+#+BEGIN_SRC
+DP(i, j) = 0;
+for c in [a..z] {
+  int lo = Lowest k, s.t. i <= k <= j & s[k] = c;
+  int hi = Highest k, s.t. i <= k <= j & s[k] = c;
+  DP(i, j) += DP(lo + 1, hi - 1);
+}
+#+END_SRC
+
+To find lo and hi we can do binary search on sorted position list of any given character.
+
+Time Complexity : =O(N^2logN)=
+
+* Solution
+#+BEGIN_SRC cpp
+class Solution {
+    const int MOD = 1e9 + 7;
+    const int CHARSIZE = 4;
+    vector<vector<int>> dp_;
+    vector<vector<int>> char_pos_list_;
+
+    void Init(const string& s) {
+        int n = s.size();
+        dp_ = vector<vector<int>>(n, vector<int>(n, -1));
+        char_pos_list_ = vector<vector<int>>(CHARSIZE, vector<int>());
+        for (int i = 0; i < n; ++i) {
+            char_pos_list_[s[i] - 'a'].push_back(i);
+        }
+    }
+
+    pair<int,int> FindBounds(int l, int r, char c) {
+        auto& pos_list = char_pos_list_[c - 'a'];
+        if (pos_list.empty()) return {-1, -1};
+        auto low_it = lower_bound(pos_list.begin(), pos_list.end(), l);
+        if (low_it == pos_list.end() || *low_it > r) return {-1, -1};
+        auto up_it = upper_bound(pos_list.begin(), pos_list.end(), r);
+        up_it = prev(up_it);
+        return {*low_it, *up_it};
+    }
+
+    int Solve(int l, int r) {
+        if (l > r) return 0;
+        if (dp_[l][r] != -1) return dp_[l][r];
+        if (l == r) return dp_[l][r] = 1;
+
+        int count = 0;
+        for (int i = 0; i < CHARSIZE; ++i) {
+            auto bounds = FindBounds(l, r, 'a' + i);
+            if (bounds.first >= l && bounds.second <= r) {
+                // Count of length 1 and 2 (if possible);
+                count = (count + 1 + (bounds.second > bounds.first ? 1 : 0)) % MOD;
+
+                // Count recursively.
+                count = (count + Solve(bounds.first + 1, bounds.second - 1)) % MOD;
+            }
+        }
+        return dp_[l][r] = count;
+    }
+
+public:
+    int countPalindromicSubsequences(string s) {
+        Init(s);
+        int n = s.size();
+        return Solve(0, n - 1);
+    }
+};
+#+END_SRC
