@@ -87,3 +87,18 @@ public:
     }
 };
 #+END_SRC
+* Improvement
+We can also create DP in a different way to get a =O(N^2)= time complexity and =O(N)= space complexity solution.
+
+Let =cnt[L][i][c]= be the count of char c starting palindrome subsequences from string =s.substr(i,L)=
+(i.e. s[i...i + L - 1]), we have the DP equations:
+
+- if ~s[i] != c~, ~cnt[L][i][c] = cnt[L-1][i+1][c]~;
+- if ~s[i+L-1] != c~, ~cnt[L][i][c] = cnt[L-1][i][c]~;
+- otherwise, ~cnt[L][i][c] = 2 + cnt[L-2][i+1][c]~.
+*NOTE:* The extra 2 palindrome subsequences in last case are single =c= and =c+c=.
+
+Since =cnt[L][i][c]= depends only on previous values of length =L-1= and =L-2=, we only need to allocate
+spaces for =cnt, cnt1, cnt2=.
+
+Ref : https://leetcode.com/problems/count-different-palindromic-subsequences/discuss/109511/12-liner-O(N2)-time-O(N)-space-clean-DP-with-explanation
