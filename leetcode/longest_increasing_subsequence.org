@@ -1,0 +1,87 @@
+#+title: Longest Increasing Subsequence (LIS)
+
+* Problem Statement
+Given an array 'A', find length of longest increasing subsequence.
+
+* Solutions
+Various solutions :
+** DP
+We can create below DP to solve this :
+
+Define DP[i] as LIS starting from index i, then we have -
+
+DP[i] = 1 + max(DP[j]), s.t. j > i & A[j] > A[i]
+
+#+BEGIN_SRC cpp
+int LIS(const vector<int>& A) {
+  int N = A.size();
+  vector<int> DP(N);
+  DP[N - 1] = 1;
+
+  int lis 1;
+  for (int i = N - 2; i >= 0; --i) {
+    int max_val = 0;
+    for (int j = i + 1; j < N; ++j) {
+      if (A[j] > A[i]) {
+        max_val = max(max_val, DP[j]);
+      }
+    }
+    DP[i] = 1 + max_val;
+    lis = max(lis, DP[i]);
+  }
+  return lis;
+}
+#+END_SRC
+
+Clearly complexity of this algorithm is O(N^2). Let's see other approach which is more optimal.
+** Optimized
+This approach is a mix of Greedy, DP and binary search.
+
+Here idea is to maintain all possible increasing subsequences, but obviously efficiently. For that
+we just store the last element of any increasing subsequence. And we also use the *greedy* idea that
+if we have two different possible end elements of an increasing subsequence of a given lenght 'l', then
+we can safely discard one with higher end element.
+
+Let's say we have processed A[..i], then maintain an array T, s.t.
+T[j] = min end element among all increasing subsequences of lenght j in A[..i].
+
+Formally speaking, let's define an array 'D' as :
+D[i] = Minimum end element at which increasing subsequence of length 'i' terminates.
+
+Now after processing each element of our array 'A', we can keep updating D and finally our soln. will be
+highest 'k', s.t. D[k] is finite.
+
+#+BEGIN_SRC cpp
+int LIS(const vector<int>& A) {
+  int n = A.size(), INF = INT_MAX, M_INF = INT_MIN;
+  vector<int> D(n + 1, INF);
+  D[0] = M_INF;
+  for (int i = 0; i < n; ++i) {
+    // Try using A[i] as end of each possible sub-sequence.
+    for (int j = 1; j <= n; ++j) {
+      if (A[i] < D[j] && A[i] > D[j - 1]) {
+        D[j] = A[i];
+      }
+    }
+  }
+
+  int lis = 0;
+  for (int j = 1; j <= n; ++j) {
+    if (D[j] < INF) lis = j;
+  }
+  return lis;
+}
+#+END_SRC
+
+But even this approach has complexity similar to previous DP algorithm, i.e. O(N^2). But few observations
+can helps us optimize this.
+
+Main observation here is that array 'D' will always be sorted (easy to see why). Now if we view L62 in light
+of this new observation, then it's easy to see that above condition will be true for only one 'j'.
+
+Basically we just need to find upper bound of A[i] in D now, instead of iterating on entire D. This optimization will
+give us overall complexity of O(NlogN).
+* Ref
+- https://cp-algorithms.com/sequences/longest_increasing_subsequence.html
+- https://www.cs.princeton.edu/courses/archive/spring13/cos423/lectures/LongestIncreasingSubsequence.pdf
+- https://www.geeksforgeeks.org/longest-monotonically-increasing-subsequence-size-n-log-n/
