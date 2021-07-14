@@ -1,0 +1,52 @@
+#+TITLE: Kth Smallest Subarray Sum
+
+* Problem
+Given an integer array =nums= of length =n= and an integer =k=, return the =kth= *smallest subarray sum*.
+
+A *subarray* is defined as a *non-empty* contiguous sequence of elements in an array. A *subarray sum*
+is the sum of all elements in the subarray.
+* Solution
+Binary search for the answer. We just need a function to find no. of subarrays whose sum is <= target sum.
+Because we don't have any negative elements, so we can use two pointers to count that.
+
+#+BEGIN_SRC cpp
+class Solution {
+    const int MAX_VAL = 5 * 1e4;
+
+    int numSubarrayWithSumLEGivenSum(const vector<int>& nums, int target) {
+        int cnt = 0, n = nums.size();
+        for (int l = 0, r = -1, sum = 0; l < n; ++l) {
+            while (r + 1 < n && sum + nums[r + 1] <= target) {
+                sum += nums[++r];
+            }
+
+            if (r >= l) {
+                cnt += r - l + 1;
+                sum -= nums[l];
+            }
+
+            r = max(r, l);
+        }
+
+        return cnt;
+    }
+
+public:
+    int kthSmallestSubarraySum(vector<int>& nums, int k) {
+        int n = nums.size(), low = 1, high = n * MAX_VAL;
+        while (low < high) {
+            int mid = low + ((high - low) >> 1);
+            int cnt = numSubarrayWithSumLEGivenSum(nums, mid);
+            if (cnt >= k) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        return low;
+    }
+};
+#+END_SRC
+* Similar problems
+- https://leetcode.com/problems/kth-smallest-element-in-a-sorted-matrix/
