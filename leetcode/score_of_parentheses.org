@@ -1,0 +1,81 @@
+#+TITLE: Score of Parentheses
+
+* Problem
+Given a balanced parentheses string =s=, compute the score of the string based on the following rule:
+
+    - =()= has score 1
+    - =AB= has score =A + B=, where A and B are balanced parentheses strings.
+    - =(A)= has score =2 * A=, where A is a balanced parentheses string.
+* Solution
+Because string is given to be balanced, so we can use a stack to simulate this scoring. In our state machine
+we are only interested in those states where we encounter a =)=. We have two possibilities there :
+
+1. =)= just matches a =(=, i.e. we have =()=.
+2. =(A)=, where A is a non-empty balanced string.
+
+In first case we know it'll give a score of 1. But in other case we need to know score of =A=.
+
+Key idea here is that we somehow need to maintain score of these =A='s. And to do that we can use a stack.
+
+i.e. =(B)= will give us a score of =1= if B is empty and =2 * st.top()= otherwise. And this new score will also
+go into stack =st=.
+
+But we also need to handle the second condition in the problem statement. To do that we just need to check if current
+score can be combined with any previous score, i.e. when we are finished with =(B)=, we need to check if there was any
+previous =A=, s.t. we had =(A)(B)= (here =A= and =B= can be empty).
+
+To do that we just need to check if there's any =(= on top of our stack or not. For eg. if we have this stack
+(after processing =B=):
+
+#+BEGIN_EXAMPLE
+ 9
+"("
+ 8
+#+END_EXAMPLE
+
+Then we can not combine top two elements. But in below case we can :
+
+#+BEGIN_EXAMPLE
+ 9
+ 10
+"("
+ 8
+#+END_EXAMPLE
+
+Also it's easy to see that we can never have more than two numbers occuring consecutively in our stack.
+* Code
+Instead of creating a stack of enum to maintain numbers and =(= both, we can just maintain a stack of int where it'll
+be negative when we hit a =(=. Specifically if s[i] = '(', then we store ~-i~ in our stack, otherwise store last score.
+
+#+BEGIN_SRC cpp
+class Solution {
+public:
+    int scoreOfParentheses(string s) {
+        stack<int> scores;
+        int n = s.size();
+        for (int i = 0; i < n; ++i) {
+            if (s[i] == '(') {
+                scores.push(-1 * i);
+                continue;
+            }
+
+            int t = scores.top();
+            scores.pop();
+            int cur_score = 1;
+            if (t > 0) {
+                cur_score = 2 * t;
+                scores.pop();
+            }
+
+            if (!scores.empty() && scores.top() > 0) {
+                cur_score += scores.top();
+                scores.pop();
+            }
+
+            scores.push(cur_score);
+        }
+
+        return scores.top();
+    }
+};
+#+END_SRC
