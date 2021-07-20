@@ -1,0 +1,74 @@
+#+TITLE: Maximum Number Of Points With Cost
+
+* Problem
+You are given an =m x n= integer matrix =points=. You need to chose one element from each row such that
+your total score is maximized.
+
+Picking the cell at coordinates =(r, c)= will add =points[r][c]= to your score.
+
+However, you will lose points if you pick a cell too far from the cell that you picked in the previous row.
+For every two adjacent rows =r= and =r + 1= (where ~0 <= r < m - 1~), picking cells at coordinates =(r, c1)=
+and =(r + 1, c2)= will subtract =abs(c1 - c2)= from your score.
+
+Return the maximum score you can achieve.
+
+* Idea
+Let's try to solve this problem for m = 2, i.e. only two rows.
+
+Also instead of working with absolute differences here (=abs(c1 - c2)=), we can first solve for case
+where ~c2 >= c1~ and then separately solve for the case where ~c2 < c1~ and then take max of both.
+
+So let's just focus only on the ~c2 >= c1~ part. That means we want to chose two indices =i= and =j=, s.t.
+
+=points[0][i] + points[1][j] - (j - i)= is maximised, where ~j >= i~. Let's call this additional value as =ans=,
+i.e. ~ans(i) = points[1][j] - (j - i)~.
+
+One obvious way is to bruteforce for such =j= for each =i=. But notice that we are doing some repetitive work
+for =i= and =i - 1=, so there's scope for optimization.
+
+So idea is to start =i= backwards from =n - 1= to =0= and try to re-use info between =i= and =i - 1=. Let's say
+for a given =i= we know =j= s.t. =points[1][j] - (j - i)= (where ~j >= i~) is maximum. Now how can we use this info
+to find our next such =j= for =i - 1=.
+
+Try to see what changes when we go from =i= to =i - 1=. Clearly =points[1][j]= is constant, so we are only concerned
+about the delta, i.e. =j - i= which will now become =j - (i - 1)=. This means we'll be now subtracting an extra =1=
+from previous values. And subtracting a same value (i.e. =1=) from a list will decrease the maximum value also by =1=.
+
+So essentially for =points[0][i]= we need to consider two values : =points[1][i]= and =ans(i + 1) - 1=.
+
+And repeat the same procedure in forward direction (i.e. =i= moves from =0= to =n - 1=) to cover cases where =c2 < c1=.
+
+And finally to solve our original problem with any value of =m= (instead of =2=) we can use this same idea starting from
+last row and going backward to first. Only difference is that instead of considering =points[r + 1][j]= while processing
+row =r=, we need to consider =maxPoints[r + 1][j]=, i.e. soln. for the sub-problem consisting of rows =r + 1..m - 1= and
+top column as =j=. So clearly we can use dynamic programming here.
+* Solution
+#+BEGIN_SRC cpp
+class Solution {
+public:
+    long long maxPoints(vector<vector<int>>& points) {
+        int m = points.size(), n = points[0].size();
+        vector<vector<long long>> dp(m + 1, vector<long long>(n, 0));
+
+        long long ans = 0;
+        for (int r = m - 1; r >= 0; --r) {
+            long long cur_max = -1;
+            for (int c = n - 1; c >= 0; --c) {
+                cur_max = max(cur_max, dp[r + 1][c]);
+                dp[r][c] = 1LL * points[r][c] + cur_max;
+                --cur_max;
+            }
+
+            cur_max = -1;
+            for (int c = 0; c < n; ++c) {
+                cur_max = max(cur_max, dp[r + 1][c]);
+                dp[r][c] = max(dp[r][c], 1LL * points[r][c] + cur_max);
+                if (!r) ans = max(ans, dp[r][c]);
+                --cur_max;
+            }
+        }
+
+        return ans;
+    }
+};
+#+END_SRC
