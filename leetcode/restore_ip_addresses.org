@@ -26,16 +26,7 @@ class Solution {
         if (part[0] == '0') {
             return part.size() == 1;
         }
-
-        if (part[0] == '1') {
-            return true;
-        }
-
-        if (part[0] == '2') {
-            return StoI(part) <= 255;
-        }
-
-        return part.size() <= 2;
+        return StoI(part) <= 255;
     }
 
     vector<string> solveRec(const string& s, int start, int num_parts) {
