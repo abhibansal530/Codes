@@ -1,0 +1,43 @@
+#+TITLE: Palindrome Partitioning II
+
+* Problem
+Given a string =s=, partition =s= such that every partition is a palindrome.
+
+Return the minimum cuts needed for a palindrome partitioning of =s=.
+* Solution
+We can use Dynamic Programming to solve this. Let's define =min_cut(i)= as min
+cuts required to partition =s[i..]=, then we have
+
+~min_cuts[i] = Min(min_cuts[i], x + min_cuts[j + 1]), for every j s.t. s[i..j] is a palindrome.~
+~And x is 1 if j < n - 1 else 0.~
+
+Only thing is we need to check if =s[i..j]= is a palindrome efficiently. That's a standard problem and
+we can use either hashing or dynamic programming again.
+
+Time complexity : =O(n^2)=
+Space complexity : =O(n^2)= (Can be optimized to =O(n)= if we use hashing for checking palindromes).
+* Code
+#+BEGIN_SRC cpp
+class Solution {
+public:
+    int minCut(string s) {
+        int n = s.size();
+        vector<vector<bool>> is_palin(n, vector<bool>(n, false));
+        for (int len = 1; len <= n; ++len) {
+            for (int i = 0, j = i + len - 1; j < n; ++i, ++j) {
+                is_palin[i][j] = (s[i] == s[j]) && (i + 1 > j - 1 || is_palin[i + 1][j - 1]);
+            }
+        }
+
+        vector<int> min_cuts(n + 1, 2*n);
+        min_cuts[n] = 0;
+        for (int i = n - 1; i >= 0; --i) {
+            for (int j = i; j < n; ++j) {
+                if (!is_palin[i][j]) continue;
+                min_cuts[i] = min(min_cuts[i], (j < n - 1 ? 1 : 0) + min_cuts[j + 1]);
+            }
+        }
+        return min_cuts[0];
+    }
+};
+#+END_SRC
