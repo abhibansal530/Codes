@@ -41,3 +41,25 @@ public:
     }
 };
 #+END_SRC
+* Alternate Solution without palindrome table
+We can avoid creating palindrome table above (=is_palin= array) by using the same idea which is used
+to count all the palindromic substrings of a given string.
+
+There idea used is that we try to expand the palindrome around each possible center. Similarly here
+while computing =min_cuts(i)=, instead of checking if =s[i..j]= (for every j >= i) is a palindrome or
+not, we can do it the other way around.
+
+In simple words, instead of checking whether any =s[i..j]= is a palindrome, just pick a palindromic substring
+of =s= and then try to update our =min_cuts= array. Some pseudocode :
+
+#+BEGIN_SRC cpp
+for (int i = n - 1; i >= 0; --i) {
+    for (l s.t. s[i - l..i + l] is a palindrome) {
+        min_cuts[i - l] = Min(min_cuts[i - l], x + min_cuts[i + l + 1])
+    }
+
+    // Repeat above loop for even length palindromes around i.
+}
+#+END_SRC
+
+*Ref*: https://leetcode.com/problems/palindrome-partitioning-ii/discuss/42198/My-solution-does-not-need-a-table-for-palindrome-is-it-right-It-uses-only-O(n)-space.
