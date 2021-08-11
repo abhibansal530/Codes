@@ -12,7 +12,7 @@ Define DP[i] as LIS starting from index i, then we have -
 
 DP[i] = 1 + max(DP[j]), s.t. j > i & A[j] > A[i]
 
-#+BEGIN_SRC cpp
+#+BEGIN_SRC cpp -n :exports code
 int LIS(const vector<int>& A) {
   int N = A.size();
   vector<int> DP(N);
