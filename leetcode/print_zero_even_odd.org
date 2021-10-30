@@ -1,0 +1,80 @@
+#+TITLE: Print Zero Even Odd
+
+* Problem
+You have a function =printNumber= that can be called with an integer parameter and prints it to the
+console.
+
+You are given an instance of the class =ZeroEvenOdd= that has three functions: =zero=, =even=, and =odd=.
+The same instance of =ZeroEvenOdd= will be passed to three different threads:
+
+    - *Thread A:* calls =zero()= that should only output =0='s.
+    - *Thread B:* calls =even()= that should only output even numbers.
+    - *Thread C:* calls =odd()= that should only output odd numbers.
+
+Modify the given class to output the series "=010203040506...=" where the length of the series must be =2n=.
+
+* Solution
+Using Condition variable :
+
+#+BEGIN_SRC cpp
+class ZeroEvenOdd {
+private:
+    int n;
+    condition_variable cv_;
+    mutex mtx_;
+    // Whether it's zero's turn.
+    volatile bool zero_turn_ = false;
+    // Current number to print (wait if 0).
+    volatile int cnt_ = 0;
+
+    void WaitForZeroAndPrint(function<void(int)> print_fn) {
+        unique_lock<mutex> lock(mtx_);
+        cv_.wait(lock, [this]{ return zero_turn_; });
+
+        // It's zero's turn and we have mtx_.
+        print_fn(0);
+        zero_turn_ = false;
+        ++cnt_;
+        lock.unlock();
+        cv_.notify_all();
+    }
+
+    void WaitForNumAndPrint(int num, function<void(int)> print_fn) {
+        unique_lock<mutex> lock(mtx_);
+        cv_.wait(lock, [this, num]{ return !zero_turn_ && cnt_ == num; });
+
+        // It's our turn and we have mtx_.
+        print_fn(num);
+        zero_turn_ = true;
+        lock.unlock();
+        cv_.notify_all();
+    }
+
+public:
+    ZeroEvenOdd(int n) {
+        this->n = n;
+        zero_turn_ = true; // Zero starts first.
+    }
+
+    // printNumber(x) outputs "x", where x is an integer.
+    void zero(function<void(int)> printNumber) {
+        for (int i = 0; i < n; ++i) {
+            WaitForZeroAndPrint(printNumber);
+        }
+    }
+
+    void even(function<void(int)> printNumber) {
+        int max = n & 1 ? n - 1 : n;
+        for (int i = 2; i <= max; i += 2) {
+            WaitForNumAndPrint(i, printNumber);
+        }
+    }
+
+    void odd(function<void(int)> printNumber) {
+        int max = n & 1 ? n : n - 1;
+        for (int i = 1; i <= max; i += 2) {
+            WaitForNumAndPrint(i, printNumber);
+        }
+    }
+};
+#+END_SRC
