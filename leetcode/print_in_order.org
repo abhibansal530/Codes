@@ -1,0 +1,89 @@
+#+TITLE: Print In Order
+
+* Problem
+Suppose we have a class:
+
+#+BEGIN_EXAMPLE
+public class Foo {
+  public void first() { print("first"); }
+  public void second() { print("second"); }
+  public void third() { print("third"); }
+}
+#+END_EXAMPLE
+
+The same instance of =Foo= will be passed to three different threads. Thread A will call =first()=,
+thread B will call =second()=, and thread C will call =third()=. Design a mechanism and modify the
+program to ensure that =second()= is executed after =first()=, and =third()= is executed after =second()=.
+* Solution
+** Busy wait
+Idea is to make each thread wait until its turn to print comes. Waiting is done via a busy loop.
+#+BEGIN_SRC cpp
+class Foo {
+    atomic<int> count_;
+
+    void WaitAndPrint(int target_cnt, function<void()> print_fn) {
+        while (count_.load() < target_cnt);
+
+        if (count_.load() == target_cnt) {
+            print_fn();
+            count_.fetch_add(1);
+        }
+    }
+
+public:
+    Foo() : count_(1) {
+    }
+
+    void first(function<void()> printFirst) {
+        WaitAndPrint(1, printFirst);
+    }
+
+    void second(function<void()> printSecond) {
+        WaitAndPrint(2, printSecond);
+    }
+
+    void third(function<void()> printThird) {
+        WaitAndPrint(3, printThird);
+    }
+};
+#+END_SRC
+** Condition variable
+Previous approach has a major downside : Busy wait wastes CPU. So instead of busy wait
+we want thread to go into sleep (suspend execution). That can be done using Condition variables :
+
+#+BEGIN_SRC cpp
+class Foo {
+    mutex mtx_;
+    volatile int count_ = 0;
+    condition_variable cv_;
+
+    void WaitAndPrint(int target_cnt, function<void()> print_fn) {
+        unique_lock<mutex> lck(mtx_);
+        cv_.wait(lck, [this, target_cnt] { return count_ == target_cnt; });
+
+        // We have mtx_ now.
+        print_fn();
+        ++count_;
+        lck.unlock();
+        cv_.notify_all();
+    }
+
+public:
+    Foo() : count_(1) {
+    }
+
+    void first(function<void()> printFirst) {
+        WaitAndPrint(1, printFirst);
+    }
+
+    void second(function<void()> printSecond) {
+        WaitAndPrint(2, printSecond);
+    }
+
+    void third(function<void()> printThird) {
+        WaitAndPrint(3, printThird);
+    }
+};
+#+END_SRC
+* Ref
+- https://en.cppreference.com/w/cpp/thread/condition_variable
