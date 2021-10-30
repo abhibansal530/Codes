@@ -1,0 +1,69 @@
+#+TITLE: Print FooBar Alternately
+
+* Problem
+Suppose you are given the following code:
+
+#+BEGIN_EXAMPLE
+class FooBar {
+  public void foo() {
+    for (int i = 0; i < n; i++) {
+      print("foo");
+    }
+  }
+
+  public void bar() {
+    for (int i = 0; i < n; i++) {
+      print("bar");
+    }
+  }
+}
+#+END_EXAMPLE
+
+The same instance of =FooBar= will be passed to two different threads:
+
+    thread =A= will call =foo()=, while
+    thread =B= will call =bar()=.
+
+Modify the given program to output ="foobar"= =n= times.
+* Solution
+Similar to [[file:print_in_order.org][Print In Order]] we can use a Condition variable here :
+
+#+BEGIN_SRC cpp
+class FooBar {
+
+private:
+    mutex mtx_;
+    volatile bool turn_ = false; // True iff foo's turn.
+    condition_variable cv_;
+    int n;
+
+    void WaitAndPrint(bool turn, function<void()> print_fn) {
+        unique_lock<mutex> lock(mtx_);
+        cv_.wait(lock, [this, turn] { return turn_ == turn; });
+
+        // It's our turn and we have mtx_.
+        print_fn();
+        turn_ = !turn_;
+        lock.unlock();
+        cv_.notify_one();
+    }
+
+public:
+    FooBar(int n) {
+        this->n = n;
+        turn_ = true; // Foo starts first.
+    }
+
+    void foo(function<void()> printFoo) {
+        for (int i = 0; i < n; i++) {
+            WaitAndPrint(true, printFoo);
+        }
+    }
+
+    void bar(function<void()> printBar) {
+        for (int i = 0; i < n; i++) {
+            WaitAndPrint(false, printBar);
+        }
+    }
+};
+#+END_SRC
