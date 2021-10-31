@@ -1,0 +1,113 @@
+#+TITLE: Search Suggestion System
+
+* Problem
+Given an array of strings =products= and a string =searchWord=. We want to design a system that suggests
+at most three product names from =products= after each character of =searchWord= is typed. Suggested products
+should have common prefix with the =searchWord=. If there are more than three products with a common prefix
+return the three lexicographically minimums products.
+
+Return /list of lists/ of the suggested =products= after each character of =searchWord= is typed.
+* Solution
+Use a modifed trie, where each node also stores indices of 3 lexiographically smallest strings
+in its subtree.
+
+#+BEGIN_SRC cpp
+class Solution {
+
+    class Trie {
+        const static int NUMCH = 26, NUMTOP = 3;
+        struct Node {
+            bool end;
+            vector<Node*> child;
+            vector<pair<int, int>> top_suggestions;
+
+            Node(bool _end = false) : end(_end) {
+                child = vector<Node*>(NUMCH, nullptr);
+            }
+
+            void MaybeUpdateTop(int id, int score) {
+                top_suggestions.push_back({score, id});
+                if (top_suggestions.size() > NUMTOP) {
+                    sort(top_suggestions.begin(), top_suggestions.end());
+                    top_suggestions.pop_back();
+                }
+            }
+
+            vector<int> GetTopIds() {
+                vector<int> ids;
+                sort(top_suggestions.begin(), top_suggestions.end());
+                for (const auto& top : top_suggestions) {
+                    ids.push_back(top.second);
+                }
+                return ids;
+            }
+        };
+
+        Node* root_;
+
+        public:
+        Trie() {
+            root_ = new Node();
+        }
+
+        // id -> Unique global id for s.
+        // score -> Unique global score for s.
+        void Insert(const string& s, int id, int score) {
+            int n = s.size();
+            Node* curr = root_;
+            for (int i = 0; i < n; ++i) {
+                curr->MaybeUpdateTop(id, score);
+                int idx = s[i] - 'a';
+                if (!curr->child[idx]) {
+                    curr->child[idx] = new Node();
+                }
+                curr = curr->child[idx];
+            }
+
+            if (curr) {
+                curr->end = true;
+                curr->MaybeUpdateTop(id, score);
+            }
+        }
+
+        vector<vector<int>> GetTop(const string& word) {
+            int n = word.size();
+            vector<vector<int>> ret(n);
+            Node* curr = root_;
+            for (int i = 0; i < n && curr; ++i) {
+                int idx = word[i] - 'a';
+                if (!curr->child[idx]) {
+                    break;
+                }
+
+                curr = curr->child[idx];
+                ret[i] = curr->GetTopIds();
+            }
+            return ret;
+        }
+    };
+
+public:
+    vector<vector<string>> suggestedProducts(vector<string>& products, string searchWord) {
+        Trie trie;
+        sort(products.begin(), products.end());
+        int n = products.size();
+        for (int i = 0; i < n; ++i) {
+            trie.Insert(products[i], i, i);
+        }
+
+        int m = searchWord.size();
+        auto top = trie.GetTop(searchWord);
+        vector<vector<string>> ret;
+        for (int i = 0; i < m; ++i) {
+            vector<string> sugg;
+            for (int id : top[i]) {
+                sugg.push_back(products[id]);
+            }
+            ret.push_back(sugg);
+        }
+
+        return ret;
+    }
+};
+#+END_SRC
