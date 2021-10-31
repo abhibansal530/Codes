@@ -1,0 +1,40 @@
+#+TITLE: Container With Most Water
+
+* Problem
+Given =n= non-negative integers =a1, a2, ..., an=, where each represents a point at coordinate =(i, ai)=.
+=n= vertical lines are drawn such that the two endpoints of the line =i= is at =(i, ai)= and =(i, 0)=.
+Find two lines, which, together with the x-axis forms a container, such that the container contains the most water.
+* Hint
+Start from container formed by =height[0]= and =height[n - 1]=.
+* Solution
+Idea here is similar to Two pointer technique used in __Two sum__ problem.
+
+Start from container formed using =height[0]= and =height[n - 1]=. Now we have three cases :
+
+1. =height[0] < height[n - 1]= : Notice that this is the best container formed using =height[0]= as one end.
+   So we can skip =height[0]= going forward.
+2. =height[n - 1] < height[0]= : Notice that this is the best container formed using =height[n - 1]= as one end.
+   So we can skip =height[n - 1]= going forward.
+3. =height[n - 1] = height[0]= : Notice that this is the best container formed using =height[n - 1]= (or =height[0]=).
+   So we can skip both =height[0]= and =height[n - 1]= going forward.
+
+#+BEGIN_SRC cpp
+class Solution {
+public:
+    int maxArea(vector<int>& height) {
+        int area = 0;
+        int l = 0, n = height.size(), r = n - 1;
+        while (l < r) {
+            if (height[l] <= height[r]) {
+                area = max(area, (r - l) * height[l]);
+                ++l;
+            } else {
+                area = max(area, (r - l) * height[r]);
+                --r;
+            }
+        }
+
+        return area;
+    }
+};
+#+END_SRC
